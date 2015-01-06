@@ -2777,35 +2777,249 @@ def abouteasygui():
     codebox("About EasyGui\n{}".format(eg_version), "EasyGui", EASYGUI_ABOUT_INFORMATION)
     return None
 
+
+
+
+# Playground for multiprocessing.
 import multiprocessing as mp
+import Queue
 
-def init_gui_process():
-    print "I am alive!!!"
-    codebox("About EasyGui\n{}".format(eg_version), "EasyGui", EASYGUI_ABOUT_INFORMATION)
-    pass
+try:
+    import tkinter as tk # Works for Python 3.n
+except:
+    try:
+        import Tkinter as tk # Works for Python 2.n
+    except:
+        raise ImportError('python package tkinter must be installed')
 
-class EasyguiStorage():
-    pass
-w = EasyguiStorage()
-_gui_process = None
 
-def create_gui_process():
-    """
-    Creates a process to manage the GUI if on does not already exist.
+# First Convert buttonbox function into a derived class of (frame)
+# I tried to do it the way Brian suggests:
+# http://stackoverflow.com/questions/17466561/python-tkinter-program-structure
 
-    :return:
-    """
-    mp.freeze_support()
-    global _gui_process
-    _gui_process = mp.Process(target=init_gui_process)
-    _gui_process.start()
+def x_button_box(
+        msg,
+        title):
+    print("Starting button box")
+    q = ButtonBoxDialog()
+    q.root.title(234)
+    q.root.title = "howdy"
+    print("Running button box")
+    q.run()
+    print("Stopping button box")
+
+# Simple.  Later, there may be sub-commands, arguments, etc which will want to be bundled.
+queue_commands = ['set_title', 'get_title', 'destroy', 'cancel', 'show', 'running']
+
+class QueueCommand():
+    def __init__(self, command, *args, **kwargs):
+        if command not in queue_commands:
+            err = "Command '{0}' sent to QueueCommand invalid in: {1}".format(command, queue_commands)
+            raise ValueError(err)
+        self.command = command
+        self.args = args
+        self.kwargs = kwargs
+
+
+# Polling of Queue loosely based on this article
+# http://stupidpythonideas.blogspot.com/2013/10/why-your-gui-app-freezes.html
+
+# TODO: Dynamic changing of after value to speed up once one call is made, but slow down if not
+def new_button_box(to_tk_queue, from_tk_queue):
+    x = ButtonBoxDialog(to_tk_queue=to_tk_queue, from_tk_queue=from_tk_queue)
+
+    def check_queue():
+        while True:
+            try:
+                task = to_tk_queue.get(block=False)
+            except Queue.Empty:
+                break
+            else:
+                # Process command.  Perhaps later command should be a function?  Not sure
+                if task.command == 'set_title':
+                    x.root.title(task.args[0])
+                if task.command == 'get_title':
+                    from_tk_queue.put(QueueCommand('get_title', x.root.title()))
+                if task.command == 'show':
+                    if not task.args[0]:
+                        x.root.withdraw()
+                    else:
+                        x.root.deiconify()
+                if task.command == 'running':
+                    x.user_running = task.args[0]
+                if task.command == 'destroy':
+                    x.root.destroy()
+                # This can be used if operation is slow: queue.root.after_idle(task)
+        x.root.after(100, check_queue)
+
+    x.root.after(100, check_queue)
+    x.root.mainloop()
+    from_tk_queue.put(QueueCommand('destroy'))
     return
 
+
+class ButtonBoxDialog():
+    def __init__(self, *args, **kwargs):
+        self.root = tk.Tk()
+        try:
+            self.to_tk_queue = kwargs['to_tk_queue']
+            del kwargs['to_tk_queue']
+        except:
+            raise ValueError('Internal Error: Creating ButtonBoxDialog does not include queue argument')
+        try:
+            self.from_tk_queue = kwargs['from_tk_queue']
+            del kwargs['from_tk_queue']
+        except:
+            raise ValueError('Internal Error: Creating ButtonBoxDialog does not include queue argument')
+        self.root.protocol('WM_DELETE_WINDOW', self.cancel_event)
+        self.user_running = False
+        self.frame = ButtonBoxFrame(self.root, *args, **kwargs)
+        self.frame.pack(side="top", fill="both", expand=True)
+
+    def cancel_event(self):
+        if self.user_running:  # Only allow cancel if this window is running
+            self.root.withdraw()
+            self.from_tk_queue.put(QueueCommand('cancel', None))
+        else:
+            pass
+
+
+class ButtonBoxFrame(tk.Frame):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+
+
+# This is the user side
+class UserButtonBox(object):
+    def __init__(self, show=True):
+        mp.freeze_support()
+        self._to_tk_queue = mp.Queue()
+        self._from_tk_queue = mp.Queue()
+        self._process = mp.Process(target=new_button_box, name='easygui_dialog', args=(self._to_tk_queue, self._from_tk_queue))
+        self._process.daemon = True  # Set so this process is killed when main process exits
+        self._process.start()
+        if show:
+            self.show()
+        else:
+            self.hide()
+
+    def run(self):
+        print("Waiting for any response")
+        self.show()  # Always show when run is called to avoid confusion
+        self._to_tk_queue.put(QueueCommand("running", True))
+        reply = self._from_tk_queue.get()
+        self._to_tk_queue.put(QueueCommand("running", False))
+        return reply.args[0]
+        #self._queue.put(QueueCommand("XX"))
+
+    def show(self):
+        self._to_tk_queue.put(QueueCommand("show", True))
+
+    def hide(self):
+        self._to_tk_queue.put(QueueCommand("show", False))
+
+    @property
+    def title(self):
+        self._to_tk_queue.put(QueueCommand("get_title"))
+        reply = self._from_tk_queue.get()
+        return reply.args[0]
+
+    @title.setter
+    def title(self, value):
+        self._to_tk_queue.put(QueueCommand("set_title", value))
+        return
+
+
 if __name__ == '__main__':
-    # egdemo()
-    create_gui_process()
+    print("User side starting.")
+    my_button = UserButtonBox()
+    my_button.title = "The main screen starts here!"
+    print("Title read back is: {}".format(my_button.title))
+
+    m2 = UserButtonBox()
+    m2.title = "Dummy window.  You can't close me!!!"
+    reply = my_button.run()
+    print("reply={0}".format(reply))
 
 
-    # Now build a GUI
+def XXX_buttonbox(msg=""
+              , title=" "
+              , choices=("Button[1]", "Button[2]", "Button[3]")
+              , image=None
+              , root=None
+              , default_choice=None
+              , cancel_choice=None):
+    """
+    Display a msg, a title, an image, and a set of buttons.
+    The buttons are defined by the members of the choices list.
 
-    _gui_process.join()
+    :param str msg: the msg to be displayed
+    :param str title: the window title
+    :param list choices: a list or tuple of the choices to be displayed
+    :param str image: Filename of image to display
+    :param str default_choice: The choice you want highlighted when the gui appears
+    :param str cancel_choice: If the user presses the 'X' close, which button should be pressed
+    :return: the text of the button that the user selected
+    """
+    global boxRoot, __replyButtonText, buttonsFrame
+
+    # If default is not specified, select the first button.  This matches old behavior.
+    if default_choice is None:
+        default_choice = choices[0]
+
+    # Initialize __replyButtonText to the first choice.
+    # This is what will be used if the window is closed by the close button.
+    __replyButtonText = choices[0]
+
+    if root:
+        root.withdraw()
+        boxRoot = Toplevel(master=root)
+        boxRoot.withdraw()
+    else:
+        boxRoot = Tk()
+        boxRoot.withdraw()
+
+
+    boxRoot.title(title)
+    boxRoot.iconname('Dialog')
+    boxRoot.geometry(rootWindowPosition)
+    boxRoot.minsize(400, 100)
+
+
+    # ------------- define the messageFrame ---------------------------------
+    messageFrame = Frame(master=boxRoot)
+    messageFrame.pack(side=TOP, fill=BOTH)
+
+    # ------------- define the imageFrame ---------------------------------
+    if image:
+        tk_Image = None
+        try:
+            tk_Image = __load_tk_image(image)
+        except Exception as inst:
+            print(inst)
+        if tk_Image:
+            imageFrame = Frame(master=boxRoot)
+            imageFrame.pack(side=TOP, fill=BOTH)
+            label = Label(imageFrame, image=tk_Image)
+            label.image = tk_Image  # keep a reference!
+            label.pack(side=TOP, expand=YES, fill=X, padx='1m', pady='1m')
+
+    # ------------- define the buttonsFrame ---------------------------------
+    buttonsFrame = Frame(master=boxRoot)
+    buttonsFrame.pack(side=TOP, fill=BOTH)
+
+    # -------------------- place the widgets in the frames -----------------------
+    messageWidget = Message(messageFrame, text=msg, width=400)
+    messageWidget.configure(font=(PROPORTIONAL_FONT_FAMILY, PROPORTIONAL_FONT_SIZE))
+    messageWidget.pack(side=TOP, expand=YES, fill=X, padx='3m', pady='3m')
+
+    __put_buttons_in_buttonframe(choices, default_choice, cancel_choice)
+
+    # -------------- the action begins -----------
+    boxRoot.deiconify()
+    boxRoot.mainloop()
+    boxRoot.destroy()
+    if root:
+        root.deiconify()
+    return __replyButtonText

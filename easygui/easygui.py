@@ -2781,6 +2781,7 @@ def abouteasygui():
 
 
 # Playground for multiprocessing.
+
 import multiprocessing as mp
 import Queue
 
@@ -2794,22 +2795,10 @@ except:
 
 
 # First Convert buttonbox function into a derived class of (frame)
-# I tried to do it the way Brian suggests:
 # http://stackoverflow.com/questions/17466561/python-tkinter-program-structure
 
-def x_button_box(
-        msg,
-        title):
-    print("Starting button box")
-    q = ButtonBoxDialog()
-    q.root.title(234)
-    q.root.title = "howdy"
-    print("Running button box")
-    q.run()
-    print("Stopping button box")
-
 # Simple.  Later, there may be sub-commands, arguments, etc which will want to be bundled.
-queue_commands = ['set_title', 'get_title', 'destroy', 'cancel', 'show', 'running']
+queue_commands = ['title', 'destroy', 'cancel', 'show', 'running']
 
 class QueueCommand():
     def __init__(self, command, *args, **kwargs):
@@ -2835,11 +2824,12 @@ def new_button_box(to_tk_queue, from_tk_queue):
             except Queue.Empty:
                 break
             else:
-                # Process command.  Perhaps later command should be a function?  Not sure
-                if task.command == 'set_title':
-                    x.root.title(task.args[0])
-                if task.command == 'get_title':
-                    from_tk_queue.put(QueueCommand('get_title', x.root.title()))
+                # Process commands.
+                if task.command == 'title':
+                    if not task.args:  # getter
+                        from_tk_queue.put(QueueCommand('title', x.root.title()))
+                    else:
+                        x.root.title(task.args[0])
                 if task.command == 'show':
                     if not task.args[0]:
                         x.root.withdraw()
@@ -2921,13 +2911,13 @@ class UserButtonBox(object):
 
     @property
     def title(self):
-        self._to_tk_queue.put(QueueCommand("get_title"))
+        self._to_tk_queue.put(QueueCommand("title"))
         reply = self._from_tk_queue.get()
         return reply.args[0]
 
     @title.setter
     def title(self, value):
-        self._to_tk_queue.put(QueueCommand("set_title", value))
+        self._to_tk_queue.put(QueueCommand("title", value))
         return
 
 

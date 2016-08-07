@@ -2,8 +2,8 @@ import distutils.core
 ## WARNING: Although the following import appears to do nothing, it is required for bdist_wheel to be recognized
 from setuptools import setup, find_packages
 
-version = "0.97.4"
-release = "0.97.4"
+version = "0.98.0"
+release = "0.98.0"
 
 desc = list()
 desc.append('EasyGUI is a module for very simple, very easy GUI programming in Python.  ')
@@ -30,15 +30,17 @@ Example Usage
     >>> easygui.buttonbox('Click on your favorite flavor.', 'Favorite Flavor', ('Chocolate', 'Vanilla', 'Strawberry'))
     'Chocolate'
 
+Full documentation is always available.
 
-A full tutorial is available at
+For the most-recent production version:
 <http://easygui.readthedocs.org/en/master/>.
+
 
 LICENSE INFORMATION
 ===================
 EasyGui version |version|
 
-Copyright (c) 2015, Stephen Raymond Ferg
+Copyright (c) 2015, Easygui developers and Stephen Raymond Ferg
 
 All rights reserved.
 
@@ -87,10 +89,10 @@ ABOUT THE EASYGUI LICENSE
 distutils.core.setup(
     name='easygui',
     version=version,
-    url='https://github.com/robertlugg/easygui/',
+    url='https://github.com/robertlugg/easygui',
     description=''.join(desc),
     long_description=long_description,
-    author='Stephen Ferg and Robert Lugg (active)',
+    author='easygui developers and Stephen Ferg',
     author_email='robert.lugg@gmail.com',
     license='BSD',
     keywords='gui linux windows graphical user interface',
@@ -108,6 +110,7 @@ distutils.core.setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: User Interfaces',
         ]

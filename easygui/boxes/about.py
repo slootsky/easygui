@@ -1,15 +1,16 @@
 """
 
-.. moduleauthor:: Stephen Raymond Ferg and Robert Lugg (active)
+.. moduleauthor:: easygui developers and Stephen Raymond Ferg
 .. default-domain:: py
 .. highlight:: python
 
 """
+try:
+    from .derived_boxes import codebox
+except (SystemError, ValueError, ImportError):
+    from derived_boxes import codebox
 
-
-from .derived_boxes import codebox
-
-eg_version = '0.97.4'
+eg_version = '0.98.0-RELEASED'
 egversion = eg_version
 
 
@@ -23,6 +24,38 @@ def abouteasygui():
 
 
 EASYGUI_ABOUT_INFORMATION = '''
+========================================================================
+0.98.0
+========================================================================
+This is an exciting time for easygui.  We continue to make good progress with refactoring as
+well as some enhancements and bug fixes here and there.
+
+We would like to welcome Juanjo Corrales to the team.  He is responsible for lots of good new work
+this release.  Of course we appreciate the work of everyone who contributed.
+
+NOTE: I decided in this release to change the API a bit.  Please consult the function documentation for details.
+
+BUG FIXES
+---------
+ * Made changes guessing at fixes to any IDLE problems.  Please report any problems found.
+
+ENHANCEMENTS
+------------
+ * Refactored the easygui.py file into several smaller files to improve our ability to manage the code
+ * Added callbacks to allow for more dynamic dialogs.  See the docs for usage.
+ * Added class access to dialogs so properties may be changed.
+ * Improved button boxes ability to resize during window resize by converting to Tkinter grid from packer.
+
+KNOWN ISSUES
+------------
+ * (old) In the documentation, there were previous references to issues when using the IDLE IDE.  I haven't
+   experienced those, but also didn't do anything to fix them, so they may still be there.  Please report
+   any problems and we'll try to address them
+
+OTHER CHANGES
+-------------
+ * Centralized the Python 2 versus Python 3 "compatibility layer" into boxes/utils.py
+
 ========================================================================
 0.97.4
 ========================================================================
@@ -85,8 +118,8 @@ KNOWN ISSUES
 
 Other Changes (that you likely don't care about)
 ------------------------------------------------
- * Restructured loading of image files to try PIL first throw error if file doesn't exist.
- * Converted docs to sphinx with just a bit of doctest.  Most content was retained from the old site, so
+ * Restructured loading of image files to try PIL first throw error if file doesn't exiglobal_state.
+ * Converted docs to sphinx with just a bit of docteglobal_state.  Most content was retained from the old site, so
    there might be some redundancies still.  Please make any suggested improvements.
  * Set up a GitHub repository for development: https://github.com/robertlugg/easygui
 
@@ -219,3 +252,6 @@ BUG FIXES
    a textbox and a codebox.  This was not a problem for Windows users.
 
 '''
+
+if __name__ == '__main__':
+    abouteasygui()

@@ -18,17 +18,54 @@ Example Usage
     'Chocolate'
 
 
-A full tutorial is available at
+Full documentation is always available.
+
+For the most-recent production version:
 <http://easygui.readthedocs.org/en/master/>.
 
+For our develop version which will be released next:
+<http://easygui.readthedocs.org/en/develop>.
+
+
 ========================================================================
+0.98.0
+========================================================================
+This is an exciting time for easygui.  We continue to make good progress with refactoring as
+well as some enhancements and bug fixes here and there.
+
+We would like to welcome Juanjo Denis-Corrales to the team.  He is responsible for lots of good new work
+this release.  Of course we appreciate the work of everyone who contributed.
+
+NOTE: I decided in this release to change the API a bit.  Please consult the function documentation for details.
+
+BUG FIXES
+---------
+ * Made changes guessing at fixes to any IDLE problems.  Please report any problems found.
+
+ENHANCEMENTS
+------------
+ * Refactored the easygui.py file into several smaller files to improve our ability to manage the code
+ * Added callbacks to allow for more dynamic dialogs.  See the docs for usage.
+ * Added class access to dialogs so properties may be changed.
+ * in integerbox, allowed lower and upper bounds to be None which means they aren't checked.
+
+KNOWN ISSUES
+------------
+ * There were previous issues when using easygui with the IDLE IDE.  I hope I resolved these problems, however,
+   I've never actually been able to repeat them.  Please report any problems found in github.
+
+OTHER CHANGES
+-------------
+ * Centralized the Python 2 versus Python 3 "compatibility layer" into boxes/utils.py
+
+
 0.97.4
 ========================================================================
 This is a minor bug-fix release to address python 3 import errors.
 
 0.97.3
 ========================================================================
-We are happy to release version 0.97.N of easygui.  The intent of this release is to address some basic
+We are happy to release version 0.97.3 of easygui.  The intent of this release is to address some basic
 functionality issues as well as improve easygui in the ways people have asked.
 
 Robert Lugg (me) was searching for a GUI library for my python work.  I saw easygui and liked very much its

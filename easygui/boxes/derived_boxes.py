@@ -1,14 +1,21 @@
 """
 
-.. moduleauthor:: Stephen Raymond Ferg and Robert Lugg (active)
+.. moduleauthor:: easygui developers and Stephen Raymond Ferg
 .. default-domain:: py
 .. highlight:: python
 
 """
 
-from . import base_boxes as bb
-from . import text_box as tb
-from . import utils as ut
+try:
+    from .fillable_box import __fillablebox
+    from .button_box import buttonbox
+    from . import text_box as tb
+    from . import utils as ut
+except (SystemError, ValueError, ImportError):
+    from fillable_box import __fillablebox
+    from button_box import buttonbox
+    import text_box as tb
+    import utils as ut
 
 # -------------------------------------------------------------------
 # various boxes built on top of the basic buttonbox
@@ -80,7 +87,7 @@ def ccbox(msg="Shall I continue?", title=" ",
             return False
 
     If invoked without a msg argument, displays a generic
-        request for a confirmation
+    request for a confirmation
     that the user wishes to continue.  So it can be used this way::
 
         if ccbox():
@@ -140,12 +147,14 @@ def boolbox(msg="Shall I continue?", title=" ",
             'boolbox takes exactly 2 choices!  Consider using indexbox instead'
         )
 
-    reply = bb.buttonbox(msg=msg,
-                         title=title,
-                         choices=choices,
-                         image=image,
-                         default_choice=default_choice,
-                         cancel_choice=cancel_choice)
+    reply = buttonbox(msg=msg,
+                      title=title,
+                      choices=choices,
+                      image=image,
+                      default_choice=default_choice,
+                      cancel_choice=cancel_choice)
+    if reply is None:
+        return None
     if reply == choices[0]:
         return True
     else:
@@ -171,12 +180,12 @@ def indexbox(msg="Shall I continue?", title=" ",
       which button should be pressed
     :return: the index of the choice selected, starting from 0
     """
-    reply = bb.buttonbox(msg=msg,
-                         title=title,
-                         choices=choices,
-                         image=image,
-                         default_choice=default_choice,
-                         cancel_choice=cancel_choice)
+    reply = buttonbox(msg=msg,
+                      title=title,
+                      choices=choices,
+                      image=image,
+                      default_choice=default_choice,
+                      cancel_choice=cancel_choice)
     if reply is None:
         return None
     for i, choice in enumerate(choices):
@@ -207,19 +216,41 @@ def msgbox(msg="(Your message goes here)", title=" ",
         raise AssertionError(
             "The 'ok_button' argument to msgbox must be a string.")
 
-    return bb.buttonbox(msg=msg,
-                        title=title,
-                        choices=[ok_button],
-                        image=image,
-                        root=root,
-                        default_choice=ok_button,
-                        cancel_choice=ok_button)
+    return buttonbox(msg=msg,
+                     title=title,
+                     choices=[ok_button],
+                     image=image,
+                     default_choice=ok_button,
+                     cancel_choice=ok_button)
+
+
+def convert_to_type(input_value, new_type, input_value_name=None):
+    """
+    Attempts to convert input_value to type new_type and throws error if it can't.
+
+    If input_value is None, None is returned
+    If new_type is None, input_value is returned unchanged
+    :param input_value: Value to be converted
+    :param new_type: Type to convert to
+    :param input_value_name: If not None, used in error message if input_value cannot be converted
+    :return: input_value converted to new_type, or None
+    """
+    if input_value is None or new_type is None:
+        return input_value
+
+    exception_string = (
+        'value {0}:{1} must be of type {2}.')
+    ret_value = new_type(input_value)
+#        except ValueError:
+#            raise ValueError(
+#                exception_string.format('default', default, type(default)))
+    return ret_value
 
 
 # -------------------------------------------------------------------
 # integerbox
 # -------------------------------------------------------------------
-def integerbox(msg="", title=" ", default="",
+def integerbox(msg="", title=" ", default=None,
                lowerbound=0, upperbound=99, image=None, root=None):
     """
     Show a box in which a user can enter an integer.
@@ -227,7 +258,7 @@ def integerbox(msg="", title=" ", default="",
     In addition to arguments for msg and title, this function accepts
     integer arguments for "default", "lowerbound", and "upperbound".
 
-    The default argument may be None.
+    The default, lowerbound, or upperbound may be None.
 
     When the user enters some text, the text is checked to verify that it
     can be converted to an integer between the lowerbound and upperbound.
@@ -241,7 +272,7 @@ def integerbox(msg="", title=" ", default="",
 
     :param str msg: the msg to be displayed
     :param str title: the window title
-    :param str default: The default value to return
+    :param int default: The default value to return
     :param int lowerbound: The lower-most value allowed
     :param int upperbound: The upper-most value allowed
     :param str image: Filename of image to display
@@ -256,147 +287,36 @@ def integerbox(msg="", title=" ", default="",
 
     # Validate the arguments for default, lowerbound and upperbound and
     # convert to integers
-    exception_string = (
-        'integerbox "{0}" must be an integer.  It is >{1}< of type {2}')
-    if default:
-        try:
-            default = int(default)
-        except ValueError:
-            raise ValueError(
-                exception_string.format('default', default, type(default)))
-    try:
-        lowerbound = int(lowerbound)
-    except ValueError:
-        raise ValueError(
-            exception_string.format('lowerbound',
-                                    lowerbound, type(lowerbound)))
-    try:
-        upperbound = int(upperbound)
-    except ValueError:
-        raise ValueError(
-            exception_string.format('upperbound',
-                                    upperbound, type(upperbound)))
+    default = convert_to_type(default, int, "default")
+    lowerbound = convert_to_type(lowerbound, int, "lowerbound")
+    upperbound = convert_to_type(upperbound, int, "upperbound")
 
     while True:
-        reply = enterbox(msg, title, str(default), image=image, root=root)
+        reply = enterbox(msg, title, default, image=image, root=root)
         if reply is None:
             return None
         try:
-            reply = int(reply)
-        except:
-            msgbox('The value that you entered:\n\t"{}"\nis not an integer.'
-                   .format(reply), "Error")
+            reply = convert_to_type(reply, int)
+        except ValueError:
+            msgbox('The value that you entered:\n\t"{}"\nis not an integer.'.format(reply), "Error")
             continue
-        if reply < lowerbound:
-            msgbox('The value that you entered is less than the lower '
-                   'bound of {}.'.format(lowerbound), "Error")
-            continue
-        if reply > upperbound:
-            msgbox('The value that you entered is greater than the upper bound'
-                   ' of {}.'.format(
-                       upperbound), "Error")
-            continue
+        if lowerbound is not None:
+            if reply < lowerbound:
+                msgbox('The value that you entered is less than the lower bound of {}.'.format(lowerbound), "Error")
+                continue
+        if upperbound is not None:
+            if reply > upperbound:
+                msgbox('The value that you entered is greater than the upper bound of {}.'.format(upperbound), "Error")
+                continue
         # reply has passed all validation checks.
         # It is an integer between the specified bounds.
-        return reply
+        break
+    return reply
 
 
-# -------------------------------------------------------------------
-# multenterbox
-# -------------------------------------------------------------------
-# TODO RL: Should defaults be list constructors.
-# i think after multiple calls, the value is retained.
-# TODO RL: Rename/alias to multienterbox?
-# default should be None and then in the logic create an empty list.
-def multenterbox(msg="Fill in values for the fields.", title=" ",
-                 fields=(), values=()):
-    r"""
-    Show screen with multiple data entry fields.
-
-    If there are fewer values than names, the list of values is padded with
-    empty strings until the number of values is the same as the number
-    of names.
-
-    If there are more values than names, the list of values
-    is truncated so that there are as many values as names.
-
-    Returns a list of the values of the fields,
-    or None if the user cancels the operation.
-
-    Here is some example code, that shows how values returned from
-    multenterbox can be checked for validity before they are accepted::
-
-        msg = "Enter your personal information"
-        title = "Credit Card Application"
-        fieldNames = ["Name","Street Address","City","State","ZipCode"]
-        fieldValues = []  # we start with blanks for the values
-        fieldValues = multenterbox(msg,title, fieldNames)
-
-        # make sure that none of the fields was left blank
-        while 1:
-            if fieldValues is None: break
-            errmsg = ""
-            for i in range(len(fieldNames)):
-                if fieldValues[i].strip() == "":
-                    errmsg += ('"%s" is a required field.\n\n' % fieldNames[i])
-            if errmsg == "":
-                break # no problems found
-            fieldValues = multenterbox(errmsg, title, fieldNames, fieldValues)
-
-        print("Reply was: %s" % str(fieldValues))
-
-    :param str msg: the msg to be displayed.
-    :param str title: the window title
-    :param list fields: a list of fieldnames.
-    :param list values: a list of field values
-    :return: String
-    """
-    return bb.__multfillablebox(msg, title, fields, values, None)
 
 
-# -----------------------------------------------------------------------
-# multpasswordbox
-# -----------------------------------------------------------------------
-def multpasswordbox(msg="Fill in values for the fields.",
-                    title=" ", fields=tuple(), values=tuple()):
-    r"""
-    Same interface as multenterbox.  But in multpassword box,
-    the last of the fields is assumed to be a password, and
-    is masked with asterisks.
 
-    :param str msg: the msg to be displayed.
-    :param str title: the window title
-    :param list fields: a list of fieldnames.
-    :param list values: a list of field values
-    :return: String
-
-    **Example**
-
-    Here is some example code, that shows how values returned from
-    multpasswordbox can be checked for validity before they are accepted::
-
-        msg = "Enter logon information"
-        title = "Demo of multpasswordbox"
-        fieldNames = ["Server ID", "User ID", "Password"]
-        fieldValues = []  # we start with blanks for the values
-        fieldValues = multpasswordbox(msg,title, fieldNames)
-
-        # make sure that none of the fields was left blank
-        while 1:
-            if fieldValues is None: break
-            errmsg = ""
-            for i in range(len(fieldNames)):
-                if fieldValues[i].strip() == "":
-                    errmsg = errmsg + ('"%s" is a required field.\n\n' %
-                     fieldNames[i])
-                if errmsg == "": break # no problems found
-            fieldValues = multpasswordbox(errmsg, title,
-              fieldNames, fieldValues)
-
-        print("Reply was: %s" % str(fieldValues))
-
-    """
-    return bb.__multfillablebox(msg, title, fields, values, "*")
 
 
 # -------------------------------------------------------------------
@@ -426,7 +346,7 @@ def enterbox(msg="Enter something.", title=" ", default="",
     :return: the text that the user entered, or None if he cancels
       the operation.
     """
-    result = bb.__fillablebox(
+    result = __fillablebox(
         msg, title, default=default, mask=None, image=image, root=root)
     if result and strip:
         result = result.strip()
@@ -445,54 +365,8 @@ def passwordbox(msg="Enter your password.", title=" ", default="",
     :return: the text that the user entered, or None if he cancels
       the operation.
     """
-    return bb.__fillablebox(msg, title, default, mask="*",
-                            image=image, root=root)
-
-
-# -------------------------------------------------------------------
-# multchoicebox
-# -------------------------------------------------------------------
-def multchoicebox(msg="Pick as many items as you like.", title=" ",
-                  choices=(), **kwargs):
-    """
-    Present the user with a list of choices.
-    allow him to select multiple items and return them in a list.
-    if the user doesn't choose anything from the list, return the empty list.
-    return None if he cancelled selection.
-
-    :param str msg: the msg to be displayed
-    :param str title: the window title
-    :param list choices: a list or tuple of the choices to be displayed
-    :return: List containing choice selected or None if cancelled
-
-    """
-    if len(choices) == 0:
-        choices = ["Program logic error - no choices were specified."]
-
-    global __choiceboxMultipleSelect
-    __choiceboxMultipleSelect = 1
-    return bb.__choicebox(msg, title, choices, MultipleSelect=True)
-
-
-# -----------------------------------------------------------------------
-# choicebox
-# -----------------------------------------------------------------------
-def choicebox(msg="Pick something.", title=" ", choices=()):
-    """
-    Present the user with a list of choices.
-    return the choice that he selects.
-
-    :param str msg: the msg to be displayed
-    :param str title: the window title
-    :param list choices: a list or tuple of the choices to be displayed
-    :return: List containing choice selected or None if cancelled
-    """
-    if len(choices) == 0:
-        choices = ["Program logic error - no choices were specified."]
-
-    global __choiceboxMultipleSelect
-    __choiceboxMultipleSelect = 0
-    return bb.__choicebox(msg, title, choices)
+    return __fillablebox(msg, title, default, mask="*",
+                         image=image, root=root)
 
 
 # -----------------------------------------------------------------------
@@ -539,4 +413,4 @@ def codebox(msg="", title=" ", text=""):
     :param str title: the window title
     :param str text: what to display in the textbox
     """
-    return tb.textbox(msg, title, text, codebox=1)
+    return tb.textbox(msg, title, text, codebox=True)

@@ -8,30 +8,27 @@ Introduction
 ------------
 In easygui, all GUI interactions are invoked by simple function calls.
 
-Here is a simple demo program using easygui. The screens that it produces are shown on the easygui home page.
+Here is a simple demo program using easygui.
 
 .. doctest::
-   from easygui import *
-   import sys
-        
-   while 1:
-       msgbox("Hello, world!")
-        
-       msg ="What is your favorite flavor?"
-       title = "Ice Cream Survey"
-       choices = ["Vanilla", "Chocolate", "Strawberry", "Rocky Road"]
-       choice = choicebox(msg, title, choices)
-        
-       # note that we convert choice to string, in case
-       # the user cancelled the choice, and we got None.
-       msgbox("You chose: " + str(choice), "Survey Result")
-        
-       msg = "Do you want to continue?"
-       title = "Please Confirm"
-       if ccbox(msg, title):     # show a Continue/Cancel dialog
-           pass  # user chose Continue
-       else:
-           sys.exit(0)           # user chose Cancel
+
+    from easygui import *
+    import sys
+
+    # A nice welcome message
+    ret_val = msgbox("Hello, World!")
+    if ret_val is None: # User closed msgbox
+        sys.exit(0)
+
+    msg ="What is your favorite flavor?\nOr Press <cancel> to exit."
+    title = "Ice Cream Survey"
+    choices = ["Vanilla", "Chocolate", "Strawberry", "Rocky Road"]
+    while 1:
+        choice = choicebox(msg, title, choices)
+        if choice is None:
+            sys.exit(0)
+        msgbox("You chose: {}".format(choice), "Survey Result")
+
 
 EasyGui's demonstration routine
 -------------------------------
@@ -49,14 +46,14 @@ and will print the results of your choices to the console.
 
 Importing EasyGui
 -----------------
-In order to use EasyGui, you must import it. The simplest import statment is::
+In order to use EasyGui, you must import it. The simplest import statement is::
 
     import easygui
 
 If you use this form, then to access the EasyGui functions, you must prefix them with the name "easygui", this way::
 
     easygui.msgbox(...)
-  
+
 One alternative is to import EasyGui this way::
 
     from easygui import *
@@ -73,6 +70,9 @@ This allows you to keep the EasyGui namespace separate with a minimal amount of 
 
     g.msgbox(...)
 
+This third alterative is actually the best way to do it once you get used to python and easygui.
+
+
 Using EasyGui
 -------------
 Once your module has imported EasyGui, GUI operations are a simple a matter of invoking EasyGui functions with a few parameters. For example, using EasyGui, the famous "Hello, world!" program looks like this::
@@ -80,7 +80,7 @@ Once your module has imported EasyGui, GUI operations are a simple a matter of i
     from easygui import *
     msgbox("Hello, world!")
 
-To see a demo of what EasyGui output looks like, invoke EasyGui from the command line,this way::
+To see a demo of what EasyGui output looks like, invoke easyGui from the command line, this way::
 
     python easygui.py
 
@@ -160,7 +160,7 @@ Here are a couple of examples::
     if ccbox(msg, title):     # show a Continue/Cancel dialog
         pass  # user chose Continue
     else:  # user chose Cancel
-        sys.exit(0)        
+        sys.exit(0)
 
 .. image:: _static/tutorial//screenshot_ccbox.png
    :align: center
@@ -200,7 +200,9 @@ Here is a simple example of a boolbox()::
 
 How to show an image in a buttonbox
 -----------------------------------
-When you invoke the buttonbox function (or other functions that display a button box, such as msgbox, indexbox, ynbox, etc.), you can specify the keyword argument image=xxx where xxx is the filename of an image.  The file can be .gif.  Usually, you can use other images such as .png.
+When you invoke the buttonbox function (or other functions that display a button box, such as msgbox, indexbox, ynbox,
+ etc.), you can specify the keyword argument image=xxx where xxx is the filename of an image.  The file can be .gif.
+Usually, you can use other image formats such as .png.
 
 .. note::
   The types of files supported depends on how you installed python.  If other formats don't work, you may need to install the PIL library.
@@ -213,6 +215,9 @@ Here is some sample code from EasyGui's demonstration routine::
     msg = "Do you like this picture?"
     choices = ["Yes","No","No opinion"]
     reply = buttonbox(msg, image=image, choices=choices)
+
+If you click on one of the buttons on the bottom, its value will be returned in 'reply'.  You may also click on the image.
+In that case, the image filename is returned.
 
 .. image:: _static/tutorial/screenshot_buttonbox_with_image.png
    :align: center
@@ -281,41 +286,28 @@ Returns a list of the values of the fields, or None if the user cancels the oper
 
 Here is some example code, that shows how values returned from multenterbox can be checked for validity before they are accepted::
 
+    from __future__ import print_function
     msg = "Enter your personal information"
     title = "Credit Card Application"
-    fieldNames = ["Name","Street Address","City","State","ZipCode"]
-    fieldValues = []  # we start with blanks for the values
-    fieldValues = multenterbox(msg,title, fieldNames)
-
-    # make sure that none of the fields was left blank
+    fieldNames = ["Name", "Street Address", "City", "State", "ZipCode"]
+    fieldValues = multenterbox(msg, title, fieldNames)
+    if fieldValues is None:
+        sys.exit(0)
+    # make sure that none of the fields were left blank
     while 1:
-        if fieldValues == None: break
         errmsg = ""
-        for i in range(len(fieldNames)):
-          if fieldValues[i].strip() == "":
-            errmsg = errmsg + ('"%s" is a required field.\n\n' % fieldNames[i])
-        if errmsg == "": break # no problems found
-        fieldValues = multenterbox(errmsg, title, fieldNames, fieldValues)        
-    print "Reply was:", fieldValues
+        for i, name in enumerate(fieldNames):
+            if fieldValues[i].strip() == "":
+              errmsg += "{} is a required field.\n\n".format(name)
+        if errmsg == "":
+            break # no problems found
+        fieldValues = multenterbox(errmsg, title, fieldNames, fieldValues)
+        if fieldValues is None:
+            break
+    print("Reply was:{}".format(fieldValues))
 
-Here is some example code, that shows how values returned from multpasswordbox can be checked for validity before they are accepted::
-
-            msg = "Enter logon information"
-            title = "Demo of multpasswordbox"
-            fieldNames = ["Server ID", "User ID", "Password"]
-            fieldValues = []  # we start with blanks for the values
-            fieldValues = multpasswordbox(msg,title, fieldNames)
-
-            # make sure that none of the fields was left blank
-            while 1:
-              if fieldValues == None: break
-              errmsg = ""
-              for i in range(len(fieldNames)):
-                if fieldValues[i].strip() == "":
-                  errmsg = errmsg + ('"%s" is a required field.\n\n' % fieldNames[i])
-              if errmsg == "": break # no problems found
-              fieldValues = multpasswordbox(errmsg, title, fieldNames, fieldValues)        
-            print "Reply was:", fieldValues
+.. note::
+  The first line 'from __future__' is only necessary if you are using Python 2.*, and is only needed for this demo.
 
 Letting the user enter password information
 -------------------------------------------
@@ -347,6 +339,7 @@ The codebox() function displays text in a monospaced font and does not wrap.
 
 Note that you can pass codebox() and textbox() either a string or a list of strings. A list of strings will be converted to text before being displayed. This means that you can use these functions to display the contents of a file this way::
 
+    import os
     filename = os.path.normcase("c:/autoexec.bat")
     f = open(filename, "r")
     text = f.readlines()
@@ -385,59 +378,98 @@ In order to make the process of storing and restoring user settings, EasyGui pro
 
 Your application must also create an object of that class (let's call the object settings).
 
-The constructor (the __init__ method) of the Settings class must initialize all of the values that you wish to remember.
+The constructor (the __init__ method) of the Settings class can initialize all of the values that you wish to remember.
 
 Once you have done this, you can remember the settings simply by assigning values to instance variables in the settings object, and use the settings.store() method to persist the settings object to disk.
 
-Here is an example of code to create the Settings class::
+Here is an example of code using the Settings class::
+    
+    from easygui import EgStore
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # define a class named Settings as a subclass of EgStore
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     class Settings(EgStore):
-        
+
         def __init__(self, filename):  # filename is required
-            #-------------------------------------------------
+            # -------------------------------------------------
             # Specify default/initial values for variables that
             # this particular application wants to remember.
-            #-------------------------------------------------
+            # -------------------------------------------------
             self.userId = ""
             self.targetServer = ""
-        
-            #-------------------------------------------------
+
+            # -------------------------------------------------
             # For subclasses of EgStore, these must be
             # the last two statements in  __init__
-            #-------------------------------------------------
+            # -------------------------------------------------
             self.filename = filename  # this is required
-            self.restore()            # restore values from the storage file if possible
+            self.restore()
 
-Here is an example of code to create the settings object. Simply creating the settings object will restore its values from the settingsFile, if the settingsFile exists::
-
-    #-----------------------------------------------------------------------
+    # Create the settings object.
+    # If the settingsFile exists, this will restore its values
+    # from the settingsFile.
     # create "settings", a persistent Settings object
     # Note that the "filename" argument is required.
     # The directory for the persistent file must already exist.
-    #-----------------------------------------------------------------------
-    settingsFilename = os.path.join("C:", "myApp", "settings.txt")  # Windows example
+
+    settingsFilename = "settings.txt"
     settings = Settings(settingsFilename)
 
-And here is example code of using the settings object::
-
-    # we initialize the "user" and "server" variables
+    # Now use the settings object.
+    # Initialize the "user" and "server" variables
     # In a real application, we'd probably have the user enter them via enterbox
     user    = "obama_barak"
     server  = "whitehouse1"
-        
-    # we save the variables as attributes of the "settings" object
+
+    # Save the variables as attributes of the "settings" object
     settings.userId = user
     settings.targetServer = server
     settings.store()    # persist the settings
-        
-    # run code that gets a new value for userId
+    print("\nInitial settings")
+    print settings
+
+    # Run code that gets a new value for userId
     # then persist the settings with the new value
     user    = "biden_joe"
     settings.userId = user
     settings.store()
+    print("\nSettings after modification")
+    print settings
+
+    # Delete setting variable
+    del settings.userId
+    print("\nSettings after deletion of userId")
+    print settings
+
+Here is an example of code using a dedicated function to create the Settings class::
+
+    from easygui import read_or_create_settings
+
+    # Create the settings object.
+    settings = read_or_create_settings('settings1.txt')
+
+    # Save the variables as attributes of the "settings" object
+    settings.userId = "obama_barak"
+    settings.targetServer = "whitehouse1"
+    settings.store()    # persist the settings
+    print("\nInitial settings")
+    print settings
+
+    # Run code that gets a new value for userId
+    # then persist the settings with the new value
+    user    = "biden_joe"
+    settings.userId = user
+    settings.store()
+    print("\nSettings after modification")
+    print settings
+
+    # Delete setting variable
+    del settings.userId
+    print("\nSettings after deletion of userId")
+    print settings
+
+
 
 Trapping Exceptions
 -------------------
